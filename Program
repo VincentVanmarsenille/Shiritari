@@ -1,0 +1,104 @@
+#include <iostream>
+#include <vector>
+#include <fstream>
+#include <string>
+#include <chrono>
+#include <exception>
+#include <algorithm>
+ 
+ 
+// Shiritori game
+// Opponents will have to make words starting from the seconds last letter of the previous word
+// example: car, animal, alarm, road, answer, election, oil, irresponsible
+// Each player has only 1 live, the person that survives the longest wins the game
+ 
+ 
+class stats {
+public:
+    int Lives;
+    int Wordcount;
+    int participants;
+    std::vector<string> EnglishWords;
+    std::string word;
+ 
+     // default constructor
+ 
+ 
+    bool checking_word(std::string& word)
+    {
+        std::ifstream EnglishWordsStream;
+        EnglishWordsStream.open("words.txt");
+        if (EnglishWordsStream.is_open())
+        {   
+            string line;
+            while (!EnglishWordsStream.eof())
+            {
+                std::getline(EnglishWordsStream, line)
+                if (line == word)
+                    {
+                    return true;
+                    }
+            }
+ 
+            return false;
+        }
+        else
+        {
+            std::cerr << "Could not open the required English vocabulary file!" << std::endl;
+            std::cerr << "Program will be terminated." << std::endl;
+            std::terminate();
+        }
+ 
+    }
+ 
+ 
+private: 
+ 
+ 
+ 
+ 
+};
+ 
+ 
+ 
+class game
+{
+public:
+ 
+ 
+ 
+ 
+private:
+ 
+ 
+ 
+ 
+};
+ 
+ 
+ 
+ 
+class settings
+{
+ 
+public:
+ 
+ 
+ 
+ 
+ 
+private:
+ 
+ 
+};
+ 
+ 
+int main()
+{
+    int players;
+    std::cout << "Please enter the amount of players: " << std::endl;
+    std::cin >> players;
+    std::cout << "The game will be setup up for" << players << "players."
+    std::cout << "Game will start in 10 seconds, have fun!" << std::endl;
+ 
+}
