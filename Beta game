@@ -1,0 +1,366 @@
+#include <iostream>
+#include <vector>
+#include <fstream>
+#include <string>
+#include <exception>
+#include <chrono>
+#include <thread>
+#include <algorithm>
+
+// Shiritori game written by Vincent Vanmarsenille
+// Opponents will have to make words starting with the second last letter of the previous word
+// Every iteration of a word will result in immediate elimination of the player
+// example: car, animal, alarm, road, answer, election, oil, irresponsible
+// Each player has only 1 live, the person that survives the longest wins the game
+
+
+
+// 1 known bug
+/* 
+* no IO in the constructor, looking for a more elegant way to do this => no spaghetti code
+*/
+
+
+class Player
+{
+private:
+    std::string Name;
+    int Playerwordcount;
+    int Playerlives;
+    bool alive;
+public:
+
+    Player()   // default constructor
+    {
+        std::string name;
+        std::cout << "Please enter your nickname" << std::endl;
+        std::cin >> name;
+        Name = name;
+        Playerwordcount = 0;
+        Playerlives = 1;
+        alive = true;
+    }
+
+    int update_playerwords() 
+    {
+        
+        Playerwordcount += 1;
+        return Playerwordcount;
+    }
+
+    bool update_playerlives()
+    {
+        Playerlives = Playerlives-1;
+        if (Playerlives <= 0)
+        {
+            std::cout << Name << " you have been eliminated from the game, optiefen vriend!" << std::endl;
+            std::cout << "You guessed " << Playerwordcount << " word(s) correctly!" << std::endl;
+            alive = false;
+            return false;
+        }
+        else
+        {
+            std::cout << Name << ", you have "<<Playerlives<<" live(s) remaining." << std::endl;
+            return true;
+        }
+
+    }
+
+    void get_playerinfo()
+    {
+        std::cout << Name << " correctly guessed" << Playerwordcount << "word(s)." << std::endl;
+    }
+
+    friend class Game;
+};
+
+
+
+class Game 
+{
+private:
+
+    int Setlives;
+    int Setplayers;
+    int Wordcount;
+    int Setplaytime;
+    std::vector<Player> Participants;
+    std::vector<std::string> AllWords;
+    std::string LastWord;
+    
+
+
+public:
+
+
+    Game()         // default constructor 
+    {
+        Setlives = 1;
+        Wordcount = 0;
+        Setplayers = 2;
+        Setplaytime = 20;
+        AllWords={};
+        Participants = {};
+        Participants.resize(Setplayers);
+        LastWord = "";
+
+    }
+
+    void Getting_Userinput()     // overwites values set by default constructor
+    {
+        std::cout << "Keep default settings? (y or n)" << std::endl;
+        char input;
+        std::cin >> input;
+
+        if (input == 'N' || input == 'n')
+        {
+            std::cout << "You can now manually change the settings, please answer with integers." << std::endl;
+            std::cout << "Please enter the amount of players: " << std::endl;
+            std::cin >> Setplayers;
+
+            if (Setplayers > 2)
+            {
+                for (int i = 2; i < Setplayers; i++)
+                {
+                    Player participant;
+                    Participants.push_back(participant);
+                }
+
+            }
+
+            std::cout << "Game set up for " << Setplayers << " players." << std::endl;
+
+            std::cout << "Please enter the amount of lives for each player: " << std::endl;
+            std::cin >> Setlives;
+            std::cout << "Every player will have " << Setlives << " live(s)." << std::endl;
+
+
+            std::cout << "Please enter amount of time between words: " << std::endl;
+            std::cin >> Setplaytime;
+            std::cout << "Every player will have " << Setplaytime << " seconds." << std::endl;
+
+            std::cout << "You can always stop the game by simply typing: stop." << std::endl;
+
+        }
+
+        else
+        {   
+            std::cout << "You can always stop the game by simply typing: stop." << std::endl;
+           
+        }
+    }
+
+   
+    bool shiritori_algorithm(Player& participant)    
+    {       
+            std::cout <<  "*************************************************************************" << std::endl;
+            std::cout<<participant.Name <<" it is your turn to guess an english word."<< std::endl;
+            std::cout << "You have " << Setplaytime << " seconds remaining" <<std::endl;
+            auto start = std::chrono::high_resolution_clock::now();
+            
+            if (LastWord.empty())
+            {
+                std::cout << "You can start by forming a random word from the English dictionary." << std::endl;
+            }
+            else
+            {
+                std::cout << "Form a unique English word starting with the second last letter of " << LastWord <<"." <<std::endl;
+            }
+
+            std::string GuessedWord;
+            std::cin >> GuessedWord;
+
+            
+            if (checking_word(GuessedWord) && check_starting_letter(GuessedWord) && checking_uniqueness(GuessedWord))
+            {    
+                AllWords.push_back(GuessedWord);
+                LastWord = GuessedWord;
+                auto end = std::chrono::high_resolution_clock::now();
+                auto time = end - start;
+
+                if (time < std::chrono::seconds(20))
+                {   
+                    std::cout << "Correct word, you survived!" << std::endl;
+                    participant.update_playerwords();
+                    return true;
+                    
+                }
+                else
+                {
+                    std::cout << participant.Name << " you were too slow!" << " You lost a life." << std::endl;
+                    return participant.update_playerlives();
+                    
+                }
+            }
+           
+            else
+            {   
+                auto end = std::chrono::high_resolution_clock::now();
+                auto time = end - start;
+               
+                if (time < std::chrono::seconds(20))
+                {
+                    std::cout << "Not a unique word in the English Dictionary that starts with the right letter!" << std::endl;
+                    return participant.update_playerlives();
+                    
+                }
+                
+                
+                else if (time > std::chrono::seconds(20))
+                {
+                    std::cout << "Not a unique word in the English Dictionary that starts with the right letter!" << std::endl;
+                    std::cout << "you were also too slow!"<< std::endl;
+                    return participant.update_playerlives();
+                }
+            }
+    }
+
+    bool check_starting_letter(std::string& GuessedWord)
+    {
+        if (LastWord.length() == 0)
+        {
+            return true;
+        }
+        else if (GuessedWord[0] == LastWord[LastWord.length() - 2])
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+
+    }
+
+    void execute_algorithm()
+    {   
+        while (!check_game_end())
+        {   
+            for (Player& participant : Participants)
+            {
+                if (participant.alive == true)
+                {
+                    shiritori_algorithm(participant);
+                }
+            }      
+        }
+
+        std::cout << get_winner().Name << " is the winner of the game!!!" << std::endl;
+        std::cout << get_winner().Name << " guessed " << get_winner().Playerwordcount << " word(s) correctly." << std::endl;
+        std::cout << "Game ended." << std::endl;
+        std::terminate;
+
+    }
+
+    bool check_game_end()
+    {
+        int counter = 0;
+        for (Player& participant : Participants)
+        {
+            if (participant.alive == true)
+            {
+                counter += 1;
+            }
+        }
+        if (counter == 1)
+        {
+            return true;
+        }
+        else if (counter > 1)
+        {
+            return false;
+        }
+        else
+        {
+            std::cout << "Everyone died, there is no real winner here." << std::endl;
+            return true;
+        }
+
+    }
+
+    Player get_winner()
+    {
+        for (Player& participant : Participants)
+        {
+            if (participant.alive == true)
+            {
+                return participant;
+            }
+        }
+    }
+
+    void start()
+    {
+        std::cout << "Type start to start the game!" << std::endl;
+        std::string presskey;
+        std::cin >> presskey;
+        std::transform(presskey.begin(), presskey.end(), presskey.begin(), ::toupper);
+
+        while (presskey != "START")
+        {
+            std::cout << "Type start to start the game!" << std::endl;
+            std::cin >> presskey;
+            std::transform(presskey.begin(), presskey.end(), presskey.begin(), ::toupper);
+
+        }
+        return;
+    }
+
+    bool checking_uniqueness(const std::string& GuessedWord)
+    {
+        for (const std::string& word : AllWords)
+        {
+            if (GuessedWord == word)
+            {
+                return false;
+            }
+        }
+        return true; 
+    }
+
+    bool checking_word(const std::string& word)
+    {
+        std::ifstream EnglishWordsStream("EnglishDictionary3.txt");
+        if (EnglishWordsStream.is_open())
+        {
+            std::cout << "checking..." << std::endl;
+            std::string line;
+            while (!EnglishWordsStream.eof())
+            {
+                std::getline(EnglishWordsStream, line);
+                if (word == "stop")
+                {
+                    std::cout << "Program will be terminated!" << std::endl;
+                    std::terminate();
+                }
+                if (line == word)
+                {
+                     return true;
+                }
+            }
+
+            return false;
+        }
+        else
+        {
+            std::cout << "Could not open the required English vocabulary file!" << std::endl;
+            std::cout << "Program will be terminated." << std::endl;
+            std::terminate();
+        }
+    }
+};
+
+
+int main()
+{  
+   Game Game1{};        // calling Game default constructor
+   Game1.Getting_Userinput();
+   Game1.start();
+   Game1.execute_algorithm();
+   return 0;
+}
+
+
+
+
+
